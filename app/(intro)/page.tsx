@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import Hero from "@/components/hero";
 import Experience from "@/components/experience";
@@ -18,6 +18,7 @@ type Stage = "loading" | "ready";
 export default function Page() {
   const [stage, setStage] = useState<Stage>("loading");
   const reduceMotion = useReducedMotion();
+  const portfolioRef = useRef<HTMLDivElement>(null);
 
   const { scrollY } = useScroll();
 
@@ -64,7 +65,7 @@ export default function Page() {
 
   // Click anywhere on hero = smooth-scroll through the collapse
   const scrollToPortfolio = () => {
-    window.scrollTo({ top: COLLAPSE_RANGE, behavior: "smooth" });
+    portfolioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -94,114 +95,117 @@ export default function Page() {
         <Header />
       </motion.div>
 
-      {/* ── Hero — sticky, shrinks to 0 as you scroll ── */}
-      <motion.section
-        className="sticky top-0 z-10 w-full overflow-hidden bg-[#0a0a0a] cursor-pointer flex flex-col items-center justify-center"
-        style={{ height: reduceMotion ? "100vh" : heroHeight }}
-        onClick={scrollToPortfolio}
+      {/* ── Hero — sticky over a dedicated scroll wrapper to avoid Chrome flicker ── */}
+      <div
+        style={{
+          height: reduceMotion ? "100vh" : `calc(100vh + ${COLLAPSE_RANGE}px)`,
+          background: "#0a0a0a",
+        }}
       >
-        {!reduceMotion && <DotField />}
+        <motion.section
+          className="sticky top-0 z-10 flex h-screen w-full cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#0a0a0a]"
+          onClick={scrollToPortfolio}
+        >
+          {!reduceMotion && <DotField />}
 
-        {/* Loading bar */}
-        <AnimatePresence>
-          {stage === "loading" && (
-            <motion.div
-              key="loading"
-              className="absolute flex flex-col items-center gap-3"
-              exit={{ opacity: 0, transition: { duration: reduceMotion ? 0.15 : 0.4 } }}
-            >
-              <span className="text-sm tracking-[0.4em] uppercase text-white/30">
-                Loading
-              </span>
-              <div className="relative h-[3px] w-72 rounded-full bg-white/10 overflow-hidden">
-                <motion.div
-                  className="absolute left-0 top-0 h-full bg-white/60 rounded-full"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: reduceMotion ? 0.25 : 0.6, ease: "easeInOut" }}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Ready state — title + subtitle fade in, then collapse on scroll */}
-        {stage === "ready" && (
-          <>
-            {/* Centered content: parent fades in on mount, children fade on scroll */}
-            <motion.div
-              className="flex flex-col items-center gap-6 text-center text-white pointer-events-none relative z-10"
-              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reduceMotion ? 0.15 : 0.7 }}
-            >
-              <motion.h1
-                className="text-6xl sm:text-7xl font-semibold tracking-tight"
-                style={reduceMotion ? undefined : { scale: titleScale, opacity: titleOpacity }}
-              >
-                Stanley Pan
-              </motion.h1>
-              <motion.p
-                className="text-sm tracking-widest uppercase text-white/40"
-                style={reduceMotion ? undefined : { opacity: subOpacity }}
-              >
-                Computer Engineer · San Diego, CA
-              </motion.p>
-            </motion.div>
-
-            {/* Scroll / click hint at the bottom */}
-            <motion.div
-              className="absolute bottom-9 flex flex-col items-center gap-2 pointer-events-none"
-              style={reduceMotion ? undefined : { opacity: hintOpacity }}
-            >
+          {/* Loading bar */}
+          <AnimatePresence>
+            {stage === "loading" && (
               <motion.div
-                initial={reduceMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: reduceMotion ? 0 : 0.5, duration: reduceMotion ? 0.15 : 0.6 }}
-                className="flex flex-col items-center gap-2"
+                key="loading"
+                className="absolute flex flex-col items-center gap-3"
+                exit={{ opacity: 0, transition: { duration: reduceMotion ? 0.15 : 0.4 } }}
               >
-                <p
-                  className="text-xs tracking-widest uppercase"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(90deg, rgba(255,255,255,0.2) 30%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0.2) 70%)",
-                    backgroundSize: "200% auto",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    animation: reduceMotion ? "none" : "shimmer 4.5s linear infinite",
-                    animationDelay: reduceMotion ? undefined : "0.8s",
-                  }}
-                >
-                  Scroll or click to continue
-                </p>
-                <motion.svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-white/70"
-                  animate={reduceMotion ? undefined : { y: [0, 5, 0] }}
-                  transition={reduceMotion ? undefined : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </motion.svg>
+                <span className="text-sm tracking-[0.4em] uppercase text-white/30">
+                  Loading
+                </span>
+                <div className="relative h-[3px] w-72 overflow-hidden rounded-full bg-white/10">
+                  <motion.div
+                    className="absolute left-0 top-0 h-full rounded-full bg-white/60"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: reduceMotion ? 0.25 : 0.6, ease: "easeInOut" }}
+                  />
+                </div>
               </motion.div>
-            </motion.div>
-          </>
-        )}
-      </motion.section>
+            )}
+          </AnimatePresence>
 
-      {/* Scroll driver — dark fill that creates the collapse scroll distance */}
-      <div style={{ height: reduceMotion ? 0 : COLLAPSE_RANGE, background: "#0a0a0a" }} />
+          {/* Ready state — title + subtitle fade in, then collapse on scroll */}
+          {stage === "ready" && (
+            <>
+              {/* Centered content: parent fades in on mount, children fade on scroll */}
+              <motion.div
+                className="relative z-10 flex flex-col items-center gap-6 text-center text-white pointer-events-none"
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduceMotion ? 0.15 : 0.7 }}
+              >
+                <motion.h1
+                  className="text-6xl sm:text-7xl font-semibold tracking-tight"
+                  style={reduceMotion ? undefined : { scale: titleScale, opacity: titleOpacity }}
+                >
+                  Stanley Pan
+                </motion.h1>
+                <motion.p
+                  className="text-sm tracking-widest uppercase text-white/40"
+                  style={reduceMotion ? undefined : { opacity: subOpacity }}
+                >
+                  Computer Engineer · San Diego, CA
+                </motion.p>
+              </motion.div>
+
+              {/* Scroll / click hint at the bottom */}
+              <motion.div
+                className="absolute bottom-9 flex flex-col items-center gap-2 pointer-events-none"
+                style={reduceMotion ? undefined : { opacity: hintOpacity }}
+              >
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: reduceMotion ? 0 : 0.5, duration: reduceMotion ? 0.15 : 0.6 }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <p
+                    className="text-xs tracking-widest uppercase"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(90deg, rgba(255,255,255,0.2) 30%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0.2) 70%)",
+                      backgroundSize: "200% auto",
+                      backgroundClip: "text",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      animation: reduceMotion ? "none" : "shimmer 4.5s linear infinite",
+                      animationDelay: reduceMotion ? undefined : "0.8s",
+                    }}
+                  >
+                    Scroll or click to continue
+                  </p>
+                  <motion.svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-white/70"
+                    animate={reduceMotion ? undefined : { y: [0, 5, 0] }}
+                    transition={reduceMotion ? undefined : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </motion.svg>
+                </motion.div>
+              </motion.div>
+            </>
+          )}
+        </motion.section>
+      </div>
 
       {/* Portfolio */}
-      <div className="bg-[#f3f1ee]">
+      <div ref={portfolioRef} className="bg-[#f3f1ee]">
         <main className="grow">
           <Hero />
           <Experience />
