@@ -130,7 +130,7 @@ export default function DotField() {
       }
 
       // Draw each color group in one pass
-      for (const [key, group] of byColor) {
+      byColor.forEach((group, key) => {
         const [rr, gg, bb] = key.split(",").map(Number);
         const isWhite = rr > 240 && gg > 240 && bb > 240;
         ctx.fillStyle = `rgba(${key},${isWhite ? 0.35 : 0.9})`;
@@ -147,7 +147,7 @@ export default function DotField() {
           ctx.arc(dot.x, dot.y, r, 0, Math.PI * 2);
         }
         ctx.fill();
-      }
+      });
       ctx.shadowBlur = 0;
 
       animId = requestAnimationFrame(draw);
